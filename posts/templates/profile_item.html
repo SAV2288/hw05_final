@@ -1,0 +1,52 @@
+<div class="col-md-3 mb-3 mt-1">
+    <div class="card">
+            <div class="card-body">
+                    <div class="h2">
+                        {{ author_info_dict.author.get_full_name }}
+                    </div>
+                    <div class="h3 text-muted">
+                        {{ author_info_dict.author.get_username }}
+                    </div>
+            </div>
+            <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                            <div class="h6 text-muted">
+                            Подписчиков: {{ author_info_dict.subscribe }} <br />
+                            Подписан: {{ author_info_dict.subscribers }}
+                            </div>
+                    </li>
+                    <li class="list-group-item">
+                            <div class="h6 text-muted">
+                                Записей: <a class="p-2 text-dark" href="/{{ author_info_dict.author.get_username }}/">{{ author_info_dict.number_of_records }}</a>
+                            </div>
+                            <div class="h6 text-muted">
+                                Записи в группах: <br>
+                                {% if author_info_dict.group_list %}
+                                {% for group in author_info_dict.group_list %}
+                                <a class="p-2 text-dark" href="/group/{{ group.slug }}/{{ author_info_dict.author.get_username }}/">- {{ group.title }}</a><br>
+                                {% endfor %}
+                                {% else %}
+                                У автора нет записей в группах
+                                {% endif %}
+                            </div>
+                    </li>
+            </ul>
+    </div>
+{% if user.is_authenticated %}
+        {% if user.username != author_info_dict.author.get_username %}
+                <li class="list-group-item">
+                {% if author_info_dict.following %}
+                        <a class="btn btn-lg btn-light" 
+                                href="{% url 'profile_unfollow' author_info_dict.author.get_username %}" role="button"> 
+                                Отписаться 
+                        </a> 
+                {% else %}
+                        <a class="btn btn-lg btn-primary" 
+                                href="{% url 'profile_follow' author_info_dict.author.get_username %}" role="button">
+                        Подписаться 
+                        </a>
+                {% endif %}
+                </li>
+        {% endif %}
+{% endif %}
+</div>

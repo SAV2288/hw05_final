@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Последние обновления на сайте{% endblock %}
+{% block content %}
+{% include "menu.html" with index=True %}
+    <h1 align="center" style="margin-top:25px; margin-bottom:25px;">Последние обновления на сайте | Yatube</h1>
+    <div class="card mb-3 mt-1 shadow-sm">
+    <div class="card-body" style="margin-left:40px;">
+    {% for post in page %}
+        {% include "post_item.html" with post=post %}
+    {% endfor %}
+    </div>
+    </div>
+
+    {% if page.has_other_pages %}
+        {% include "paginator.html" with items=page paginator=paginator%}
+    {% endif %}
+
+{% endblock %}

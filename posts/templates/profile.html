@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Профайл пользователя {{ author_info_dict.author.get_full_name }}{% endblock %}
+{% block content %}
+
+    <main role="main" class="container">
+        <div class="row">
+                {% include "profile_item.html" %}
+                <div class="col-md-9">
+                    <!-- Начало блока с постами --> 
+                        <div class="card mb-3 mt-1 shadow-sm">
+                        <div align="center" style="margin-top:25px; margin-bottom:5px;">
+                                {% if author_info_dict.group_current %}
+                                <h2>Записи {{ author_info_dict.author.get_username }} в группе {{ author_info_dict.group_current.title }}</h2>
+                                {% else %}
+                                <h2>Все записи пользователя {{ author_info_dict.author.get_username }}</h2>
+                                {% endif %}
+                        </div>
+                            {% for post in page %}
+                                {% include "post_item.html" with post=post %}
+                            {% endfor %}
+                        </div>
+                        <!-- Паджинатор -->
+                        <div>
+                            {% if page.has_other_pages %}
+                                {% include "paginator.html" with items=page paginator=paginator%}
+                            {% endif %}
+                        </div>
+                </div>
+        </div>
+    </main>
+{% endblock %}
