@@ -8,7 +8,7 @@ from django.db.models import Count
 import datetime as dt
 
 from .models import Post, Group, Comment, Follow
-from .forms import NewPost, NewComment
+from .forms import NewPost, CommentForm
 
 User = get_user_model()
 
@@ -75,19 +75,21 @@ def profile(request, username):
         "page": page,
         "paginator": paginator,
         "author_info_dict": author_info_dict,
+        "author": author_info_dict["author"]
         })
 
 
 def post_view(request, username, post_id,):
     author_info_dict = profile_author(request, username)
     post = Post.objects.annotate(comment_count=Count("post_comment")).get(pk=post_id)
-    form = NewComment(request.POST or None, files=request.FILES or None)
+    form = CommentForm(request.POST or None, files=request.FILES or None)
     items = Comment.objects.filter(post=post_id).order_by("-created")
     return render(request, "post.html", {
         "author_info_dict":author_info_dict,
         "post": post,
         "form": form,
         "items": items,
+        "author": author_info_dict["author"],
         })
 
 
@@ -141,7 +143,7 @@ def server_error(request):
 
 @login_required
 def add_comment(request, username, post_id):
-    form = NewComment(request.POST or None, files=request.FILES or None)
+    form = CommentForm(request.POST or None, files=request.FILES or None)
 
     if request.method == "POST":
         if form.is_valid():

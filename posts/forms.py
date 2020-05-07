@@ -10,7 +10,7 @@ class NewPost(forms.ModelForm):
         fields = ("text", "group", "image")
         
 
-class NewComment(forms.ModelForm):
+class CommentForm(forms.ModelForm):
     text = forms.CharField( widget=forms.Textarea(attrs={"rows":5, "cols":20}))
     class Meta():
         model = Comment
