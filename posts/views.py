@@ -147,7 +147,7 @@ def add_comment(request, username, post_id):
 
     if request.method == "POST":
         if form.is_valid():
-            post = Post.objects.get(pk=post_id)
+            post = get_object_or_404(Post, pk=post_id)
             comment = form.save(commit=False)
             comment.author = request.user
             comment.post = post
@@ -163,14 +163,10 @@ def add_comment(request, username, post_id):
 def profile_author(request, username):
     author = get_object_or_404(User, username=username)
     post_list = Post.objects.annotate(comment_count=Count("post_comment")).filter(author=author).order_by("-pub_date")
-    # Получаем список групп с постами автора.
-    group_list = []
-    for post in post_list:
-        group = post.group
-        if group:
-            group_list.append(group)
-    group_list = set(group_list)
-    number_of_records = len(post_list)
+    # Получаем "title" и "slug" групп с постами автора.
+    # К сожалению distinct() не убрал повторения, поэтому оставил set
+    group_list = set(post_list.values_list("group__title", "group__slug"))
+    number_of_records = post_list.count()
     subscribe = Follow.objects.filter(author=author).count()
     subscribers = Follow.objects.filter(user=author).count()
     if request.user.is_authenticated:
@@ -191,16 +187,12 @@ def profile_author(request, username):
 
 @login_required
 def follow_index(request):
-    following = Follow.objects.filter(user=request.user)
-    post_list = []
-    post_list_sort = []
-    for follow in following:
-        post_list_author = Post.objects.annotate(comment_count=Count("post_comment")).filter(author=follow.author)
-        for post in post_list_author:
-            post_list.append(post)
-    post_list_sort = sorted(post_list, key=lambda x: x.pub_date, reverse=True)
-        
-    paginator = Paginator(post_list_sort, 10)
+    # Находим авторов, на которых подписан пользователь
+    following = Follow.objects.filter(user=request.user).values_list("author")
+    # Получаем все посты авторов
+    post_list = Post.objects.filter(author__in=following).annotate(comment_count=Count("post_comment")).order_by("-pub_date")
+
+    paginator = Paginator(post_list, 10)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
     return render(request, "follow.html", {"page": page, "paginator": paginator, "following": following})

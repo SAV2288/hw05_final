@@ -9,8 +9,8 @@
                     <!-- Начало блока с постами --> 
                         <div class="card mb-3 mt-1 shadow-sm">
                         <div align="center" style="margin-top:25px; margin-bottom:5px;">
-                                {% if author_info_dict.group_current %}
-                                <h2>Записи {{ author_info_dict.author.get_username }} в группе {{ author_info_dict.group_current.title }}</h2>
+                                {% if group_current %}
+                                <h2>Записи {{ author_info_dict.author.get_username }} в группе {{ group_current.title }}</h2>
                                 {% else %}
                                 <h2>Все записи пользователя {{ author_info_dict.author.get_username }}</h2>
                                 {% endif %}

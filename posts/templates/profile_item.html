@@ -23,7 +23,9 @@
                                 Записи в группах: <br>
                                 {% if author_info_dict.group_list %}
                                 {% for group in author_info_dict.group_list %}
-                                <a class="p-2 text-dark" href="/group/{{ group.slug }}/{{ author_info_dict.author.get_username }}/">- {{ group.title }}</a><br>
+                                        {% if group.0 != None %}
+                                        <a class="p-2 text-dark" href="/group/{{ group.1 }}/{{ author_info_dict.author.get_username }}/">- {{ group.0 }}</a><br>
+                                        {% endif %}
                                 {% endfor %}
                                 {% else %}
                                 У автора нет записей в группах
