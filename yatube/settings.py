@@ -26,10 +26,11 @@ SECRET_KEY = 'lkrtn2$&tqew9h-w=$bsybqi8fzzrwjat(_me7m1c!iyx@tq)t'
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "[::1]",
-    "testserver",
+    "*"
+    # "localhost",
+    # "127.0.0.1",
+    # "[::1]",
+    # "testserver",
 ]
 
 

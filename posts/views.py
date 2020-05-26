@@ -25,12 +25,9 @@ def user_validate(func):
 
 @cache_page(20, key_prefix="index_page")
 def index(request):
-    post_list = Post.objects.annotate(comment_count=Count("post_comment")).order_by("-pub_date")
-    # показывать по 10 записей на странице.
+    post_list = Post.objects.select_related("author", "group").annotate(comment_count=Count("post_comment")).order_by("-pub_date")
     paginator = Paginator(post_list, 10)
-    # переменная в URL с номером запрошенной страницы
     page_number = request.GET.get("page")
-    # получить записи с нужным смещением
     page = paginator.get_page(page_number)
     return render(request, 'index.html', {"page": page, "paginator": paginator})
 
@@ -38,7 +35,7 @@ def index(request):
 # view-функция для страницы сообщества
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    post_list = Post.objects.annotate(comment_count=Count("post_comment")).filter(group=group).order_by("-pub_date")
+    post_list = Post.objects.select_related("author", "group").annotate(comment_count=Count("post_comment")).filter(group=group).order_by("-pub_date")
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
@@ -49,7 +46,6 @@ def group_posts(request, slug):
 # View-функция для страницы добавления новой записи
 def new_post(request):
     form = NewPost(request.POST or None, files=request.FILES or None)
-    # Если пришел POST-запрос
     if request.method == "POST":
         if form.is_valid():
             post = form.save(commit=False)
@@ -62,6 +58,7 @@ def new_post(request):
     return render(request, "new_post.html", {"form":form})
 
 
+# Профиль пользователя
 def profile(request, username):
     author_info_dict = profile_author(request, username)
     # показывать по 10 записей на странице.
@@ -79,9 +76,10 @@ def profile(request, username):
         })
 
 
-def post_view(request, username, post_id,):
+# Страница поста
+def post_view(request, username,post_id,):
     author_info_dict = profile_author(request, username)
-    post = Post.objects.annotate(comment_count=Count("post_comment")).get(pk=post_id)
+    post = get_object_or_404(Post.objects.select_related("author", "group").annotate(comment_count=Count("post_comment")), pk=post_id, author=author_info_dict["author"])
     form = CommentForm(request.POST or None, files=request.FILES or None)
     items = Comment.objects.filter(post=post_id).order_by("-created")
     return render(request, "post.html", {
@@ -94,6 +92,7 @@ def post_view(request, username, post_id,):
 
 
 @user_validate
+# Редактирование поста
 def post_edit(request, username, post_id):
     post = get_object_or_404(Post, pk=post_id)
     form = NewPost(request.POST or None, files=request.FILES or None, instance=post)
@@ -105,7 +104,6 @@ def post_edit(request, username, post_id):
             post.save()
             # Перенаправляем пользователя на главную страницу
             return redirect(f"/{username}/{post_id}/")
-        # Автоматическое заполнение прошедшими валидацию данными всех полей(после ошибки)
         return render(request, "new_post.html", {"form": form, "post": post})
     
     return render(request, "new_post.html", {"form": form, "post": post})
@@ -133,18 +131,20 @@ def author_current_group_posts(request, username, slug):
         })
 
 
+# 404
 def page_not_found(request, exception):
     return render(request, "misc/404.html", {"path": request.path}, status=404)
 
 
+# 500
 def server_error(request):
     return render(request, "misc/500.html", status=500)
 
 
 @login_required
+# Добавление коментария
 def add_comment(request, username, post_id):
     form = CommentForm(request.POST or None, files=request.FILES or None)
-
     if request.method == "POST":
         if form.is_valid():
             post = get_object_or_404(Post, pk=post_id)
@@ -153,8 +153,9 @@ def add_comment(request, username, post_id):
             comment.post = post
             comment.save()
             return redirect(f"/{username}/{post_id}/")
-        # Автоматическое заполнение прошедшими валидацию данными всех полей(после ошибки)
         return render(request, "comments.html", {"form": form})
+    elif request.method == "GET":
+        return redirect(f"/{username}/{post_id}/")
 
     return render(request, "comments.html", {"form":form})
 
@@ -162,7 +163,7 @@ def add_comment(request, username, post_id):
 # Информация об авторе
 def profile_author(request, username):
     author = get_object_or_404(User, username=username)
-    post_list = Post.objects.annotate(comment_count=Count("post_comment")).filter(author=author).order_by("-pub_date")
+    post_list = Post.objects.select_related("author", "group").annotate(comment_count=Count("post_comment")).filter(author=author).order_by("-pub_date")
     # Получаем "title" и "slug" групп с постами автора.
     # К сожалению distinct() не убрал повторения, поэтому оставил set
     group_list = set(post_list.values_list("group__title", "group__slug"))
@@ -186,11 +187,12 @@ def profile_author(request, username):
 
 
 @login_required
+# Страница с постами авторов, на которых подписан пользователь
 def follow_index(request):
     # Находим авторов, на которых подписан пользователь
     following = Follow.objects.filter(user=request.user).values_list("author")
     # Получаем все посты авторов
-    post_list = Post.objects.filter(author__in=following).annotate(comment_count=Count("post_comment")).order_by("-pub_date")
+    post_list = Post.objects.select_related("author", "group").filter(author__in=following).annotate(comment_count=Count("post_comment")).order_by("-pub_date")
 
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get("page")
@@ -199,6 +201,7 @@ def follow_index(request):
 
 
 @login_required
+# Подписаться на автора
 def profile_follow(request, username):
     author = User.objects.get(username=username)
     follow = Follow.objects.filter(user = request.user, author = author).count()
@@ -208,7 +211,8 @@ def profile_follow(request, username):
 
 
 @login_required
+# Отписаться от автора
 def profile_unfollow(request, username):
     author = User.objects.get(username=username)
-    follow = Follow.objects.get(user = request.user, author = author).delete()
+    follow = Follow.objects.filter(user = request.user, author = author).delete()
     return redirect(f"/{username}/")
