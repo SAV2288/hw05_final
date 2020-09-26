@@ -1,1 +1,2 @@
-# hw05_final
+Блог. Учебный проект на Django Framework.
+Демо: https://gromozeka.gq/
